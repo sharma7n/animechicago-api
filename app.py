@@ -12,6 +12,25 @@ flask_cors.CORS(app)
 
 API_ROOT = 'https://api.meetup.com/animechicago'
 
+def meetup_date(meetup):
+    return pendulum.from_format(meetup['local_date'], '%Y-%m-%d', 'America/Chicago')
+
+def filter_meetups(meetups):
+    now = pendulum.now('America/Chicago')
+    three_weeks_out = now.add(weeks=3)
+    for meetup in meetups:
+        date = meetup_date(meetup)
+        if now <= date <= three_weeks_out:
+            yield meetup
+
+def add_date_formats(meetups):
+    for meetup in meetups:
+        date = meetup_date(meetup)
+        fmt_date = date.format('%a %b %d')
+        meetup['fmt_date'] = fmt_date
+        yield meetup
+        
+
 @app.route('/digest')
 def digest():
     uri = '{API_ROOT}/events'.format(API_ROOT=API_ROOT)
@@ -22,11 +41,6 @@ def digest():
     
     response = requests.get(uri, params=params)
     data = response.json()
-    now = pendulum.now('America/Chicago')
-    three_weeks_out = now.add(weeks=3)
-    filtered_data = [
-        record for record in data 
-        if now <= pendulum.from_format(record['local_date'], '%Y-%m-%d') <= three_weeks_out
-    ]
     
-    return flask.jsonify(filtered_data)
+    wrapped_response = list(add_date_formats(filter_meetups(data)))
+    return flask.jsonify(wrapped_response)
