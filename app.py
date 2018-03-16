@@ -1,6 +1,7 @@
 import os
 
 import flask
+import pendulum
 import requests
 
 app = flask.Flask(__name__)
@@ -11,12 +12,19 @@ API_ROOT = 'https://api.meetup.com/animechicago'
 
 @app.route('/digest')
 def digest():
-    uri = '{API_ROOT}/events?&sign=true&photo-host=public&page=20&sign=true&key={MEETUP_API_KEY}'.format(
-        API_ROOT=API_ROOT,
-        MEETUP_API_KEY=app.config['MEETUP_API_KEY'])
-    response = requests.get(uri)
-    return flask.jsonify(response.json())
-
-@app.route('/newsletter')
-def newsletter():
-    pass
+    uri = '{API_ROOT}/events'.format(API_ROOT=API_ROOT)
+    params = {
+        'sign': "true",
+        'key': app.config['MEETUP_API_KEY']
+    }
+    
+    response = requests.get(uri, params=params)
+    data = response.json()
+    now = pendulum.now('America/Chicago')
+    three_weeks_out = now.add(weeks=3)
+    filtered_data = [
+        record for record in data 
+        if now <= pendulum.from_format(record['local_date'], '%Y-%m-%d') <= three_weeks_out
+    ]
+    
+    return flask.jsonify(filtered_data)
