@@ -10,6 +10,7 @@ verify_ssl = true
 flask = "*"
 pendulum = "*"
 requests = "*"
+gunicorn = "*"
 
 
 [requires]
