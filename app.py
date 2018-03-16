@@ -1,12 +1,14 @@
 import os
 
 import flask
+import flask_cors
 import pendulum
 import requests
 
 app = flask.Flask(__name__)
 app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
 app.config['MEETUP_API_KEY'] = os.environ['MEETUP_API_KEY']
+flask_cors.CORS(app)
 
 API_ROOT = 'https://api.meetup.com/animechicago'
 
