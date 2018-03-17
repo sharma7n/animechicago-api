@@ -4,6 +4,7 @@ import flask
 import flask_cors
 import pendulum
 import requests
+import untangle
 
 app = flask.Flask(__name__)
 app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
@@ -24,8 +25,8 @@ def filter_meetups(meetups):
         if now <= date <= three_weeks_out:
             yield meetup
 
-@app.route('/digest')
-def digest():
+@app.route('/meetups')
+def meetups():
     response = requests.get(f'{API_ROOT}/events', params={
         'sign': "true",
         'key': app.config['MEETUP_API_KEY']
@@ -33,3 +34,18 @@ def digest():
     
     data = response.json()
     return flask.jsonify(list(filter_meetups(data)))
+
+@app.route('/events')
+def events():
+    events = untangle.parse('https://animechicago.com/feed/?topic=events')
+    items = events.rss.channel.item
+    data = [
+        {
+            'title': item.title.cdata,
+            'link': item.link.cdata,
+            'description': item.description.cdata
+        }
+        for item in items
+    ]
+    
+    return flask.jsonify(data)
